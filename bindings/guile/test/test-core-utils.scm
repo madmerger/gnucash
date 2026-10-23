@@ -42,6 +42,16 @@
     "${symbol} does not exist"
     (gnc:format "${symbol} does not exist" 'existence "none"))
 
+  (test-equal "multibyte text before and between substitutions"
+    "会社 損益計算書 期間 2025/01/01 ～ 2025/12/31"
+    (gnc:format "${company-name} ${report-title} 期間 ${start} ～ ${end}"
+                'company-name "会社" 'report-title "損益計算書"
+                'start "2025/01/01" 'end "2025/12/31"))
+
+  (test-equal "multibyte prefix and incomplete tokens"
+    "期間 ${ ${} ${a b} x"
+    (gnc:format "期間 ${ ${} ${a b} ${v}" 'v "x"))
+
   (test-error "gnc:format syntax error" #t
     (gnc:format "${symbol} does not exist" 'existence)))
 
