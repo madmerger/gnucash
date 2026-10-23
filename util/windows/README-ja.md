@@ -6,6 +6,8 @@
 
 ## ビルド
 
+インストール後、`iso_4217-ja-supplement.po` の訳語を統合して日本語の通貨名を補います。
+
 1. `gnucash-on-windows` リポジトリを `$HOME\repos\gnucash-on-windows` に clone します。
 2. このリポジトリのルートで、次を実行します。
 
