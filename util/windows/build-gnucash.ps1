@@ -184,7 +184,8 @@ function Get-PackageDependencies([string]$Path) {
 function Resolve-ArchivedPackageClosure(
     [string[]]$Roots,
     [string[]]$InitialDependencies,
-    [string[]]$PinnedPackages
+    [string[]]$PinnedPackages,
+    [string[]]$DeferredPackages
 ) {
     $resolved = [ordered]@{}
     $pending = [System.Collections.Queue]::new()
@@ -200,6 +201,10 @@ function Resolve-ArchivedPackageClosure(
         $dependency = $item.Name
         $name = ($dependency -replace '(?:>=|<=|=|>|<).*$','').Trim()
         if ([string]::IsNullOrWhiteSpace($name) -or $resolved.Contains($name)) {
+            continue
+        }
+
+        if (-not $item.IsRoot -and $DeferredPackages -contains $name) {
             continue
         }
 
@@ -404,10 +409,15 @@ if (-not $IsX64) {
         (Get-PackageDependencies $webkitPath)
         (Get-PackageDependencies $libsoupPath)
     )
+    $sourcePackageNames = @(
+        "$MingwPackagePrefix" + "libsoup"
+        "$MingwPackagePrefix" + "webkitgtk3"
+    )
     $archiveClosure = Resolve-ArchivedPackageClosure `
         -Roots $archiveDependencyRoots `
         -InitialDependencies $sourcePackageDependencies `
-        -PinnedPackages $packagesToPin.ToArray()
+        -PinnedPackages $packagesToPin.ToArray() `
+        -DeferredPackages $sourcePackageNames
     $archivePackagePaths = @($archiveClosure | ForEach-Object { $_.Path })
     if ($archivePackagePaths.Count -gt 0) {
         $pacmanExitCode = Invoke-Pacman (@("-U", "--noconfirm", "--needed") + $archivePackagePaths)
