@@ -429,6 +429,7 @@ if (-not $IsX64) {
         "pango",
         "fontconfig",
         "glib-networking",
+        "appstream-glib",
         "boost",
         "libgcrypt",
         "iso-codes",
@@ -535,7 +536,12 @@ $overrideMarker
 os.environ['AR'] = os.path.join(_mingw_base, 'bin', 'ar')
 append_autogenargs('libdbi-drivers', '--without-mysql --without-pgsql')
 branches['gnucash-git'] = ('$repoUri', '$GnucashBranch')
-append_autogenargs('gnucash-git', '-DWITH_SQL=ON -DWITH_AQBANKING=OFF -DWITH_OFX=OFF -DWITH_PYTHON=OFF -DGNC_DEFAULT_LANG=ja_JP')
+module_cmakeargs['gnucash-git'] = (
+    module_cmakeargs.get('gnucash-git', '') +
+    ' -DWITH_SQL=ON -DWITH_AQBANKING=OFF -DWITH_OFX=OFF '
+    '-DWITH_PYTHON=OFF -DGNC_DEFAULT_LANG=ja_JP '
+    '-DGTEST_ROOT=`$SRCROOT/googletest-1.16.0'
+).strip()
 # End GnuCash local source override
 "@
 [System.IO.File]::WriteAllText($jhbuildrc, $jhbuildConfig, $Utf8NoBom)
