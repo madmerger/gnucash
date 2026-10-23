@@ -169,7 +169,8 @@ gnc_default_invoice_report_combo (const char* guid_scm_function)
             ReportListEntry *rle = g_new0 (ReportListEntry, 1);
 
             rle->report_guid = guid_str;
-            rle->report_name = name;
+            rle->report_name = g_strdup (_(name));
+            g_free (name);
 
             invoice_list = g_slist_append (invoice_list, rle);
 
