@@ -306,7 +306,7 @@ if ($installedSplitRuntimePackages.Count -gt 0) {
     }
 }
 
-& $Pacman -U --noconfirm --needed $packageUrls.ToArray()
+& $Pacman -U --noconfirm --needed $packageUrls.ToArray() 2>&1
 if ($LASTEXITCODE -ne 0) {
     throw "Installing the archived MinGW toolchain failed with exit code $LASTEXITCODE"
 }
@@ -399,7 +399,7 @@ if (-not $IsX64) {
         -PinnedPackages $packagesToPin.ToArray()
     $archivePackagePaths = @($archiveClosure | ForEach-Object { $_.Path })
     if ($archivePackagePaths.Count -gt 0) {
-        & $Pacman -U --noconfirm --needed $archivePackagePaths
+        & $Pacman -U --noconfirm --needed $archivePackagePaths 2>&1
         if ($LASTEXITCODE -ne 0) {
             throw "Installing the archived i686 dependency closure failed with exit code $LASTEXITCODE"
         }
@@ -409,7 +409,7 @@ if (-not $IsX64) {
     }
 }
 
-& $Pacman -U --noconfirm --needed $libsoupPath $webkitPath
+& $Pacman -U --noconfirm --needed $libsoupPath $webkitPath 2>&1
 if ($LASTEXITCODE -ne 0) {
     throw "Installing the archived libsoup and GnuCash WebKitGTK packages failed with exit code $LASTEXITCODE"
 }
