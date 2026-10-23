@@ -43,14 +43,14 @@ gnc_lconv_set_utf8 (char **p_value, wchar_t *w_value, const char *default_value)
 static LPCWSTR
 get_locale_name ()
 {
-    char* locale = setlocale(LC_MONETARY, NULL);
-    int len = 0;
-    len = strchr (locale, '.') - locale;
-    locale[2] = '-';
-    wchar_t *wlocale = g_utf8_to_utf16 (locale, len, NULL, NULL, NULL);
-    if (IsValidLocaleName(wlocale))
-        return wlocale;
-    return LOCALE_NAME_USER_DEFAULT;
+    static WCHAR locale_name[LOCALE_NAME_MAX_LENGTH];
+
+    if (!LCIDToLocaleName (GetThreadLocale (), locale_name,
+                           G_N_ELEMENTS (locale_name),
+                           LOCALE_ALLOW_NEUTRAL_NAMES))
+        return LOCALE_NAME_USER_DEFAULT;
+
+    return locale_name;
 }
 
 #define BUFSIZE 10 //Max size used by LOCALE_SGROUPING.
