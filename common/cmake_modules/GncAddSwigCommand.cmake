@@ -37,8 +37,9 @@ macro (gnc_add_swig_guile_command _target _out_var _output _input _include_dirs)
 
     add_custom_command (
         OUTPUT ${outfile}
-        DEPENDS ${_input} ${CMAKE_SOURCE_DIR}/common/base-typemaps.i ${ARGN}
+        DEPENDS ${_input} ${CMAKE_SOURCE_DIR}/common/base-typemaps.i ${CMAKE_SOURCE_DIR}/common/cmake_modules/GncFixSwigGuileLLP64.cmake ${ARGN}
         COMMAND ${SWIG_EXECUTABLE} ${GUILE_SWIG_FLAGS}  -o ${outfile} ${_input}
+        COMMAND ${CMAKE_COMMAND} "-DSWIG_FILE=${outfile}" -P ${CMAKE_SOURCE_DIR}/common/cmake_modules/GncFixSwigGuileLLP64.cmake
     )
     add_custom_target(${_target} DEPENDS ${outfile})
 endmacro (gnc_add_swig_guile_command)

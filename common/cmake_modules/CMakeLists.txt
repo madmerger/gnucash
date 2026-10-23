@@ -3,6 +3,7 @@ set(cmake_FILES
   GncAddGSchemaTargets.cmake
   GncAddSchemeTargets.cmake
   GncAddSwigCommand.cmake
+  GncFixSwigGuileLLP64.cmake
   GncAddTest.cmake
   GncFindLibm.cmake
   GncGenerateGResources.cmake
