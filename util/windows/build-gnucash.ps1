@@ -463,7 +463,13 @@ $sourcePackageHashes = @{
 }
 foreach ($package in @($WebkitPackage, $LibsoupPackage)) {
     $expectedHash = $sourcePackageHashes[$package]
-    if (-not $expectedHash -or (Get-FileHash (Join-Path $DownloadDir $package) -Algorithm SHA256).Hash -ne $expectedHash) {
+    if (-not $expectedHash) {
+        if ($IsX64) {
+            throw "x86_64 SourceForge package hashes are not pinned: $package"
+        }
+        throw "No pinned SHA256 for SourceForge package $package"
+    }
+    if ((Get-FileHash (Join-Path $DownloadDir $package) -Algorithm SHA256).Hash -ne $expectedHash) {
         throw "No matching pinned SHA256 for SourceForge package $package"
     }
 }
@@ -637,9 +643,16 @@ if ($DependenciesOnly) {
     )
 }
 $buildCommand = 'cd "$1" && jhbuild -f src/gnucash-on-windows.git/jhbuildrc --no-interact --exit-on-error build --skip=aqbanking,libofx ' + ($buildTargets -join " ")
-& $bash -lc $buildCommand verify $targetUnixPath
-if ($LASTEXITCODE -ne 0) {
-    throw "jhbuild failed with exit code $LASTEXITCODE"
+$savedErrorActionPreference = $ErrorActionPreference
+try {
+    $ErrorActionPreference = "Continue"
+    & $bash -lc $buildCommand verify $targetUnixPath
+    $buildExitCode = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $savedErrorActionPreference
+}
+if ($buildExitCode -ne 0) {
+    throw "jhbuild failed with exit code $buildExitCode"
 }
 
 if (-not $DependenciesOnly) {
