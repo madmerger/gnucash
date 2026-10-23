@@ -25,6 +25,7 @@
 #include <Windows.h>
 #include <fcntl.h>
 #include <locale.h>
+#include <wchar.h>
 #include <glib/gi18n.h>
 #include "gnucash-locale-platform.h"
 
@@ -210,4 +211,9 @@ set_platform_ctype_to_acp (void)
     // The C locale is always aligned with ACP. Use _wsetlocale because
     // libintl's setlocale replacement refuses "C" when the ACP is UTF-8.
     _wsetlocale (LC_CTYPE, L"C");
+    if (wcscoll (L"\u5186", L"\u5186") != 0)
+    {
+        // Mixed C LC_CTYPE and multibyte LC_COLLATE makes msvcrt wcscoll fail, breaking g_utf8_collate.
+        _wsetlocale (LC_COLLATE, L"C");
+    }
 }
