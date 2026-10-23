@@ -75,7 +75,7 @@ option (ODR "Report One Definition Rule violations in tests in a non-Apple Asan 
 # ############################################################
 
 if (WIN32)
-  set (GNC_DEFAULT_LANG_DEFAULT "ja_JP")
+  set (GNC_DEFAULT_LANG_DEFAULT "ja_JP.UTF-8")
 else ()
   set (GNC_DEFAULT_LANG_DEFAULT "")
 endif ()

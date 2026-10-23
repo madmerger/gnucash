@@ -6,7 +6,8 @@ param (
     [string]$GnucashRepo = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path,
     [string]$GnucashBranch = "stable",
     [string]$GowRepo = (Join-Path $HOME "repos\gnucash-on-windows"),
-    [switch]$DependenciesOnly
+    [switch]$DependenciesOnly,
+    [switch]$VerifyOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,6 +30,10 @@ $Cygpath = Join-Path $MsysRoot "usr\bin\cygpath.exe"
 $bash = Join-Path $MsysRoot "usr\bin\bash.exe"
 $MsysArchiveBase = "https://repo.msys2.org/mingw/$MingwDir/"
 $DownloadDir = Join-Path $TargetDir "downloads"
+$archiveDependencyDir = Join-Path $DownloadDir "msys2-archive-packages"
+if (-not (Test-Path $archiveDependencyDir)) {
+    New-Item -ItemType Directory -Path $archiveDependencyDir | Out-Null
+}
 $WebkitVersion = if ($IsX64) { "2.4.11-999.13" } else { "2.4.11-999.11" }
 $WebkitPackage = "$MingwPackagePrefix" + "webkitgtk3-$WebkitVersion-any.pkg.tar.zst"
 $LibsoupPackage = "$MingwPackagePrefix" + "libsoup-2.74.3-4-any.pkg.tar.zst"
@@ -62,6 +67,27 @@ if (-not (Test-Path $MsysRoot)) {
 
 if (-not (Test-Path $Pacman)) {
     throw "MSYS2 pacman was not found at $Pacman"
+}
+
+$repoUnixPath = (& $Cygpath -u $GnucashRepo).Trim()
+$repoUri = "file://$repoUnixPath"
+if ($GnucashBranch -match "['""\\\r\n]") {
+    throw "Invalid GnuCash branch name: $GnucashBranch"
+}
+$gitExe = (Get-Command git.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+$savedErrorActionPreference = $ErrorActionPreference
+try {
+    $ErrorActionPreference = "Continue"
+    & $gitExe -C $GnucashRepo check-ref-format --branch $GnucashBranch 2>$null | Out-Null
+    $branchCheckExitCode = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $savedErrorActionPreference
+}
+if ($branchCheckExitCode -ne 0) {
+    throw "Invalid GnuCash branch name: $GnucashBranch"
+}
+if ($repoUri -match "['""\\\r\n]") {
+    throw "Invalid GnuCash repository URI: $repoUri"
 }
 
 $moduleset = Join-Path $TargetDir "src\gnucash-on-windows.git\gnucash.modules"
@@ -174,6 +200,27 @@ function Get-ArchivedPackagePath([object]$Package) {
     if (-not (Test-Path $packagePath)) {
         Invoke-WebRequest -Uri "$MsysArchiveBase$($Package.File)" -OutFile $packagePath -UseBasicParsing
     }
+    $signaturePath = "$packagePath.sig"
+    if (-not (Test-Path $signaturePath)) {
+        Invoke-WebRequest -Uri "$MsysArchiveBase$($Package.File).sig" -OutFile $signaturePath -UseBasicParsing
+    }
+    if ((Get-Item $signaturePath).Length -lt 100) {
+        throw "Missing or incomplete MSYS2 signature for $($Package.File)"
+    }
+    $unixPackagePath = (& $Cygpath -u $packagePath).Trim()
+    $unixSignaturePath = (& $Cygpath -u $signaturePath).Trim()
+    $savedErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & $bash -lc "pacman-key --verify '$unixSignaturePath' '$unixPackagePath'" 2>&1 |
+            ForEach-Object { Write-Host $_ }
+        $signatureExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $savedErrorActionPreference
+    }
+    if ($signatureExitCode -ne 0) {
+        throw "MSYS2 package signature verification failed for $($Package.File)"
+    }
     return $packagePath
 }
 
@@ -262,7 +309,7 @@ function Resolve-ArchivedPackageClosure(
             continue
         }
 
-        if (-not $item.IsRoot -and $PinnedPackages -contains $name) {
+        if ($PinnedPackages -contains $name) {
             $unsatisfied = & $Pacman -T $dependency 2>$null
             if ($LASTEXITCODE -eq 0 -and -not $unsatisfied) {
                 continue
@@ -313,6 +360,8 @@ $exactVersions = @{
     "gcc" = "15.2.0-14"
     "gcc-libs" = "15.2.0-14"
     "swig" = "4.2.1-1"
+    "glib-networking" = "2.80.1-3"
+    "libgcrypt" = "1.12.2-2"
 }
 $toolchainAndCmakePackages = @(
     "binutils",
@@ -360,7 +409,9 @@ $toolchainAndCmakePackages = @(
 $packageComponents = $exactVersions.Keys + $toolchainAndCmakePackages
 foreach ($component in ($packageComponents | Sort-Object -Unique)) {
     $name = "$MingwPackagePrefix$component"
-    $packageUrls.Add((Get-ArchivedPackageUrl $name $exactVersions[$component]))
+    $url = Get-ArchivedPackageUrl $name $exactVersions[$component]
+    $file = [System.IO.Path]::GetFileName(([uri]$url).AbsolutePath)
+    $packageUrls.Add((Get-ArchivedPackagePath ([PSCustomObject]@{ File = $file })))
     $packagesToPin.Add($name)
 }
 
@@ -375,16 +426,18 @@ $splitRuntimeComponents = @(
 $splitRuntimePackages = @($splitRuntimeComponents | ForEach-Object { "$MingwPackagePrefix$_" })
 $installedPackages = & $Pacman -Qq
 $installedSplitRuntimePackages = @($splitRuntimePackages | Where-Object { $installedPackages -contains $_ })
-if ($installedSplitRuntimePackages.Count -gt 0) {
+if (-not $VerifyOnly -and $installedSplitRuntimePackages.Count -gt 0) {
     $pacmanExitCode = Invoke-Pacman (@("-Rdd", "--noconfirm") + $installedSplitRuntimePackages)
     if ($pacmanExitCode -ne 0) {
         throw "Removing the GCC 16 split runtime packages failed with exit code $pacmanExitCode"
     }
 }
 
-$pacmanExitCode = Invoke-Pacman (@("-U", "--noconfirm", "--needed") + $packageUrls.ToArray())
-if ($pacmanExitCode -ne 0) {
-    throw "Installing the archived MinGW toolchain failed with exit code $pacmanExitCode"
+if (-not $VerifyOnly) {
+    $pacmanExitCode = Invoke-Pacman (@("-U", "--noconfirm", "--needed") + $packageUrls.ToArray())
+    if ($pacmanExitCode -ne 0) {
+        throw "Installing the archived MinGW toolchain failed with exit code $pacmanExitCode"
+    }
 }
 
 $webkitPath = Join-Path $DownloadDir $WebkitPackage
@@ -393,19 +446,24 @@ if (-not (Test-Path $DownloadDir)) {
     New-Item -ItemType Directory -Path $DownloadDir | Out-Null
 }
 foreach ($package in @($WebkitPackage, $LibsoupPackage)) {
-    foreach ($suffix in @("", ".sig")) {
-        $file = "$package$suffix"
-        $path = Join-Path $DownloadDir $file
-        if (-not (Test-Path $path)) {
-            Invoke-WebRequest -Uri "https://downloads.sourceforge.net/gnucash/Dependencies/$file" -OutFile $path -UseBasicParsing
-        }
+    $path = Join-Path $DownloadDir $package
+    if (-not (Test-Path $path)) {
+        Invoke-WebRequest -Uri "https://downloads.sourceforge.net/gnucash/Dependencies/$package" -OutFile $path -UseBasicParsing
     }
 }
 if ((Get-Item $webkitPath).Length -lt 1000000 -or
-    (Get-Item $libsoupPath).Length -lt 1000 -or
-    (Get-Item (Join-Path $DownloadDir "$WebkitPackage.sig")).Length -lt 100 -or
-    (Get-Item (Join-Path $DownloadDir "$LibsoupPackage.sig")).Length -lt 100) {
+    (Get-Item $libsoupPath).Length -lt 1000) {
     throw "The GnuCash WebKitGTK or libsoup package download was incomplete"
+}
+$sourcePackageHashes = @{
+    "mingw-w64-i686-webkitgtk3-2.4.11-999.11-any.pkg.tar.zst" = "365EADE60E5420755EEE6B2DB98C8CB29C1265E175EFCAE04290A7D2FF72B19A"
+    "mingw-w64-i686-libsoup-2.74.3-4-any.pkg.tar.zst" = "748AEFEE13458815B025412149703BE8B61D2A0BE0554A558F5D6BDEFEBED75F"
+}
+foreach ($package in @($WebkitPackage, $LibsoupPackage)) {
+    $expectedHash = $sourcePackageHashes[$package]
+    if (-not $expectedHash -or (Get-FileHash (Join-Path $DownloadDir $package) -Algorithm SHA256).Hash -ne $expectedHash) {
+        throw "No matching pinned SHA256 for SourceForge package $package"
+    }
 }
 
 $packagesToPin.Add("$MingwPackagePrefix" + "libsoup")
@@ -480,7 +538,7 @@ if (-not $IsX64) {
         -PinnedPackages $packagesToPin.ToArray() `
         -DeferredPackages $sourcePackageNames
     $archivePackagePaths = @($archiveClosure | ForEach-Object { $_.Path })
-    if ($archivePackagePaths.Count -gt 0) {
+    if (-not $VerifyOnly -and $archivePackagePaths.Count -gt 0) {
         $pacmanExitCode = Invoke-Pacman (@("-U", "--noconfirm", "--needed") + $archivePackagePaths)
         if ($pacmanExitCode -ne 0) {
             throw "Installing the archived i686 dependency closure failed with exit code $pacmanExitCode"
@@ -491,23 +549,35 @@ if (-not $IsX64) {
     }
 }
 
-$pacmanExitCode = Invoke-Pacman (@("-U", "--noconfirm", "--needed", $libsoupPath, $webkitPath))
-if ($pacmanExitCode -ne 0) {
-    throw "Installing the archived libsoup and GnuCash WebKitGTK packages failed with exit code $pacmanExitCode"
+if (-not $VerifyOnly) {
+    $pacmanExitCode = Invoke-Pacman (@("-U", "--noconfirm", "--needed", $libsoupPath, $webkitPath))
+    if ($pacmanExitCode -ne 0) {
+        throw "Installing the archived libsoup and GnuCash WebKitGTK packages failed with exit code $pacmanExitCode"
+    }
+}
+if ($VerifyOnly) {
+    Write-Host "Verified pinned archives: $($packageUrls -join ', ')"
+    if ($archiveClosure) {
+        Write-Host "Resolved dependency closure: $(($archiveClosure | ForEach-Object { $_.File }) -join ', ')"
+    }
+    Write-Host "Verified SourceForge packages: $WebkitPackage, $LibsoupPackage"
+    Write-Host "No packages were installed."
+    return
 }
 
-$ignoreLine = "IgnorePkg = " + (($packagesToPin | Sort-Object -Unique) -join " ")
 $config = Get-Content $PacmanConfig -Raw
 if ($config -match '(?m)^IgnorePkg\s*=') {
+    $existingIgnorePackages = [regex]::Match($config, '(?m)^IgnorePkg\s*=\s*(.*)$').Groups[1].Value -split '\s+'
+    $ignorePackages = @($existingIgnorePackages + $packagesToPin | Where-Object { $_ } | Sort-Object -Unique)
+    $ignoreLine = "IgnorePkg = " + ($ignorePackages -join " ")
     $config = [regex]::Replace($config, '(?m)^IgnorePkg\s*=.*$', $ignoreLine, 1)
 } else {
+    $ignoreLine = "IgnorePkg = " + (($packagesToPin | Sort-Object -Unique) -join " ")
     $config = [regex]::Replace($config, '(?m)^\[options\]\s*$', "[options]`r`n$ignoreLine", 1)
 }
 [System.IO.File]::WriteAllText($PacmanConfig, $config, $Utf8NoBom)
 
-$repoUnixPath = (& $Cygpath -u $GnucashRepo).Trim()
 $targetUnixPath = (& $Cygpath -u $TargetDir).Trim()
-$repoUri = "file://$repoUnixPath"
 $jhbuildrc = Join-Path $TargetDir "src\gnucash-on-windows.git\jhbuildrc"
 $overrideMarker = "# GnuCash local source override"
 $jhbuildConfig = Get-Content $jhbuildrc -Raw
@@ -539,7 +609,7 @@ branches['gnucash-git'] = ('$repoUri', '$GnucashBranch')
 module_cmakeargs['gnucash-git'] = (
     module_cmakeargs.get('gnucash-git', '') +
     ' -DWITH_SQL=ON -DWITH_AQBANKING=OFF -DWITH_OFX=OFF '
-    '-DWITH_PYTHON=OFF -DGNC_DEFAULT_LANG=ja_JP '
+    '-DWITH_PYTHON=OFF -DGNC_DEFAULT_LANG=ja_JP.UTF-8 '
     '-DGTEST_ROOT=`$SRCROOT/googletest-1.16.0'
 ).strip()
 # End GnuCash local source override
@@ -568,4 +638,23 @@ $buildCommand = "cd '$targetUnixPath' && jhbuild -f src/gnucash-on-windows.git/j
 & $bash -lc $buildCommand
 if ($LASTEXITCODE -ne 0) {
     throw "jhbuild failed with exit code $LASTEXITCODE"
+}
+
+if (-not $DependenciesOnly) {
+    $gnucashInstallDir = Join-Path $TargetDir "gnucash\stable\inst"
+    $msysLocaleDir = Join-Path $MingwPrefix "share\locale"
+    $installLocaleDir = Join-Path $gnucashInstallDir "share\locale"
+    $iso4217Catalogs = Get-ChildItem -Path $msysLocaleDir -Filter "iso_4217.mo" -Recurse -File
+    if (-not $iso4217Catalogs) {
+        throw "No iso_4217.mo catalogs were found under $msysLocaleDir"
+    }
+    foreach ($catalog in $iso4217Catalogs) {
+        $relativeCatalogPath = $catalog.FullName.Substring($msysLocaleDir.Length).TrimStart("\", "/")
+        $destination = Join-Path $installLocaleDir $relativeCatalogPath
+        $destinationDirectory = Split-Path $destination -Parent
+        if (-not (Test-Path $destinationDirectory)) {
+            New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+        }
+        Copy-Item -Path $catalog.FullName -Destination $destination -Force
+    }
 }
