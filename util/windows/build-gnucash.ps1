@@ -27,7 +27,7 @@ $PacmanConfig = Join-Path $MsysRoot "etc\pacman.conf"
 $Bsdtar = Join-Path $MsysRoot "usr\bin\bsdtar.exe"
 $Cygpath = Join-Path $MsysRoot "usr\bin\cygpath.exe"
 $bash = Join-Path $MsysRoot "usr\bin\bash.exe"
-$Archive = "https://repo.msys2.org/mingw/$MingwDir/"
+$MsysArchiveBase = "https://repo.msys2.org/mingw/$MingwDir/"
 $DownloadDir = Join-Path $TargetDir "downloads"
 $WebkitVersion = if ($IsX64) { "2.4.11-999.13" } else { "2.4.11-999.11" }
 $WebkitPackage = "$MingwPackagePrefix" + "webkitgtk3-$WebkitVersion-any.pkg.tar.zst"
@@ -114,7 +114,7 @@ if ($IsX64) {
 }
 [System.IO.File]::WriteAllText($moduleset, $modulesetText, $Utf8NoBom)
 
-$index = (Invoke-WebRequest -Uri $Archive -UseBasicParsing).Content
+$index = (Invoke-WebRequest -Uri $MsysArchiveBase -UseBasicParsing).Content
 $archives = foreach ($match in [regex]::Matches(
     $index,
     '(?m)<a href="([^"]+\.pkg\.tar\.zst)">[^<]*</a>\s+(\d{2}-[A-Za-z]{3}-\d{4} \d{2}:\d{2})'
@@ -154,7 +154,7 @@ function Get-ArchivedPackageUrl([string]$Name, [string]$Version = "") {
     if (-not $file) {
         throw "No archived package for $Name was found at the GCC 15.2.0-14 toolchain date"
     }
-    return "$Archive$($file.File)"
+    return "$MsysArchiveBase$($file.File)"
 }
 
 function Get-NewestArchivedPackage([string]$Name) {
@@ -225,7 +225,7 @@ function Resolve-ArchivedPackageClosure(
 
         $packagePath = Join-Path $archiveDependencyDir $archive.File
         if (-not (Test-Path $packagePath)) {
-            Invoke-WebRequest -Uri "$Archive$($archive.File)" -OutFile $packagePath -UseBasicParsing
+            Invoke-WebRequest -Uri "$MsysArchiveBase$($archive.File)" -OutFile $packagePath -UseBasicParsing
         }
         $resolved[$name] = [PSCustomObject]@{
             Name = $name
