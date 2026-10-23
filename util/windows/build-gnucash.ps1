@@ -670,4 +670,41 @@ if (-not $DependenciesOnly) {
         }
         Copy-Item -Path $catalog.FullName -Destination $destination -Force
     }
+
+    $japaneseCatalog = Join-Path $installLocaleDir "ja\LC_MESSAGES\iso_4217.mo"
+    $supplementPo = Join-Path $PSScriptRoot "iso_4217-ja-supplement.po"
+    if (-not (Test-Path $japaneseCatalog)) {
+        throw "The Japanese iso_4217.mo catalog was not installed at $japaneseCatalog"
+    }
+    if (-not (Test-Path $supplementPo)) {
+        throw "The Japanese iso_4217 supplement was not found at $supplementPo"
+    }
+
+    $tempDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ("gnucash-iso4217-" + [guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $tempDirectory | Out-Null
+    try {
+        $basePo = Join-Path $tempDirectory "base.po"
+        $mergedPo = Join-Path $tempDirectory "merged.po"
+        $compiledMo = Join-Path $tempDirectory "iso_4217.mo"
+        $unixPaths = @(& $Cygpath -u $japaneseCatalog $basePo $supplementPo $mergedPo $compiledMo)
+        if ($LASTEXITCODE -ne 0 -or $unixPaths.Count -ne 5) {
+            throw "Could not convert paths for the Japanese iso_4217 catalog merge"
+        }
+
+        $mergeCommand = 'msgunfmt -o "$2" "$1" && msgcat --use-first -o "$4" "$2" "$3" && msgfmt -c -o "$5" "$4"'
+        $savedErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = "Continue"
+            & $bash -lc $mergeCommand iso4217 $unixPaths[0].Trim() $unixPaths[1].Trim() $unixPaths[2].Trim() $unixPaths[3].Trim() $unixPaths[4].Trim()
+            $mergeExitCode = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $savedErrorActionPreference
+        }
+        if ($mergeExitCode -ne 0) {
+            throw "Merging the Japanese iso_4217 catalog failed with exit code $mergeExitCode"
+        }
+        Copy-Item -LiteralPath $compiledMo -Destination $japaneseCatalog -Force
+    } finally {
+        Remove-Item -LiteralPath $tempDirectory -Recurse -Force
+    }
 }
