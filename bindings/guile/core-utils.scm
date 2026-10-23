@@ -111,14 +111,32 @@
 (set-exception-printer! 'unbound-variable print-unbound-variable-error)
 
 ;; format.
-(define %regex (make-regexp "[$][{]([[:alnum:]\\-]+)[}]"))
+;; Scans characters instead of using POSIX regexps, whose match offsets
+;; are wrong for non-ASCII strings in multibyte locales such as CP932.
 (define (gnc:format str . bindings)
   (define hash (make-hash-table))
-  (define (substitute m)
-    (or (hashq-ref hash (string->symbol (match:substring m 1)))
-        (warn "invalid identifier" (match:substring m 0))))
+  (define (identifier-char? c)
+    (or (char-alphabetic? c) (char-numeric? c) (char=? c #\-)))
+  (define (substitute name)
+    (or (hashq-ref hash (string->symbol name))
+        (let ((token (string-append "${" name "}")))
+          (warn "invalid identifier" token)
+          token)))
+  (define (expand)
+    (let lp ((start 0) (acc '()))
+      (match (string-contains str "${" start)
+        (#f (string-concatenate-reverse acc (substring str start)))
+        (open
+         (let* ((name-start (+ open 2))
+                (close (string-index str #\} name-start)))
+           (if (and close (> close name-start)
+                    (string-every identifier-char? str name-start close))
+               (lp (1+ close)
+                   (cons* (substitute (substring str name-start close))
+                          (substring str start open) acc))
+               (lp (1+ open) (cons (substring str start (1+ open)) acc))))))))
   (let lp ((bindings bindings))
     (match bindings
-      (() (regexp-substitute/global #f %regex str 'pre substitute 'post))
+      (() (expand))
       (((? symbol? k) v . rest) (hashq-set! hash k (format #f "~a" v)) (lp rest))
       (_ (error "gnc:format syntax error")))))
