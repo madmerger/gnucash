@@ -169,16 +169,63 @@ function Get-NewestArchivedPackage([string]$Name) {
     return $file
 }
 
-function Get-PackageDependencies([string]$Path) {
+function Get-ArchivedPackagePath([object]$Package) {
+    $packagePath = Join-Path $archiveDependencyDir $Package.File
+    if (-not (Test-Path $packagePath)) {
+        Invoke-WebRequest -Uri "$MsysArchiveBase$($Package.File)" -OutFile $packagePath -UseBasicParsing
+    }
+    return $packagePath
+}
+
+function Get-PackageInfo([string]$Path) {
     $unixPath = (& $Cygpath -u $Path).Trim()
     $packageInfo = & $Bsdtar -xOf $unixPath .PKGINFO
     if ($LASTEXITCODE -ne 0) {
         throw "Could not read .PKGINFO from $Path"
     }
-    return @(
-        [regex]::Matches(($packageInfo -join "`n"), '(?m)^depend = (.+)$') |
-            ForEach-Object { $_.Groups[1].Value.Trim() }
-    )
+    $metadata = $packageInfo -join "`n"
+    return [PSCustomObject]@{
+        Dependencies = @(
+            [regex]::Matches($metadata, '(?m)^depend = (.+)$') |
+                ForEach-Object { $_.Groups[1].Value.Trim() }
+        )
+        Provides = @(
+            [regex]::Matches($metadata, '(?m)^provides = (.+)$') |
+                ForEach-Object {
+                    ($_.Groups[1].Value -replace '(?:>=|<=|=|>|<).*$','').Trim()
+                }
+        )
+    }
+}
+
+function Get-NewestArchivedProvider([string]$Name) {
+    $prefix = "$Name-"
+    $candidateNames = @(
+        foreach ($entry in ($archives | Where-Object { $_.File.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase) })) {
+            $remainder = $entry.File.Substring($prefix.Length)
+            if ($remainder -match '^(.+?)-\d') {
+                "$Name-$($Matches[1])"
+            }
+        }
+    ) | Sort-Object -Unique
+
+    foreach ($candidateName in $candidateNames) {
+        $candidate = Get-NewestArchivedPackage $candidateName
+        if (-not $candidate) {
+            continue
+        }
+        $packagePath = Get-ArchivedPackagePath $candidate
+        $metadata = Get-PackageInfo $packagePath
+        if ($metadata.Provides -contains $Name) {
+            return [PSCustomObject]@{
+                Name = $candidateName
+                File = $candidate.File
+                Path = $packagePath
+                Provides = $metadata.Provides
+            }
+        }
+    }
+    return $null
 }
 
 function Resolve-ArchivedPackageClosure(
@@ -200,7 +247,14 @@ function Resolve-ArchivedPackageClosure(
         $item = $pending.Dequeue()
         $dependency = $item.Name
         $name = ($dependency -replace '(?:>=|<=|=|>|<).*$','').Trim()
-        if ([string]::IsNullOrWhiteSpace($name) -or $resolved.Contains($name)) {
+        if ([string]::IsNullOrWhiteSpace($name)) {
+            continue
+        }
+        $alreadyResolved = $resolved.Contains($name)
+        if (-not $alreadyResolved) {
+            $alreadyResolved = @($resolved.Values | Where-Object { $_.Provides -contains $name }).Count -gt 0
+        }
+        if ($alreadyResolved) {
             continue
         }
 
@@ -217,6 +271,13 @@ function Resolve-ArchivedPackageClosure(
         }
 
         $archive = Get-NewestArchivedPackage $name
+        $packageName = $name
+        if (-not $archive) {
+            $archive = Get-NewestArchivedProvider $name
+            if ($archive) {
+                $packageName = $archive.Name
+            }
+        }
         if (-not $archive) {
             if ($item.IsRoot) {
                 throw "No archived package for required dependency $name was found"
@@ -228,18 +289,17 @@ function Resolve-ArchivedPackageClosure(
             throw "No archived package for unsatisfied dependency $dependency was found"
         }
 
-        $packagePath = Join-Path $archiveDependencyDir $archive.File
-        if (-not (Test-Path $packagePath)) {
-            Invoke-WebRequest -Uri "$MsysArchiveBase$($archive.File)" -OutFile $packagePath -UseBasicParsing
-        }
-        $resolved[$name] = [PSCustomObject]@{
-            Name = $name
+        $packagePath = if ($archive.Path) { $archive.Path } else { Get-ArchivedPackagePath $archive }
+        $metadata = Get-PackageInfo $packagePath
+        $resolved[$packageName] = [PSCustomObject]@{
+            Name = $packageName
             File = $archive.File
             Path = $packagePath
+            Provides = $metadata.Provides
         }
-        Write-Host "Resolved $name from $($archive.File)"
+        Write-Host "Resolved $packageName from $($archive.File)"
 
-        foreach ($required in (Get-PackageDependencies $packagePath)) {
+        foreach ($required in $metadata.Dependencies) {
             $pending.Enqueue([PSCustomObject]@{ Name = $required; IsRoot = $false })
         }
     }
@@ -406,8 +466,8 @@ if (-not $IsX64) {
     }
 
     $sourcePackageDependencies = @(
-        (Get-PackageDependencies $webkitPath)
-        (Get-PackageDependencies $libsoupPath)
+        (Get-PackageInfo $webkitPath).Dependencies
+        (Get-PackageInfo $libsoupPath).Dependencies
     )
     $sourcePackageNames = @(
         "$MingwPackagePrefix" + "libsoup"
