@@ -250,13 +250,25 @@ month_name (int mon)
 static void
 day_label (gchar *buf, int buf_len, int dow)
 {
-    gnc_dow_abbrev (buf, buf_len, dow);
-    /* Use only the first two characters */
-    if (g_utf8_strlen (buf, -1) > 2)
+    GDateTime *date = g_date_time_new_utc (2000, 1, 2 + dow, 12, 0, 0);
+    gchar *weekday = date ? g_date_time_format (date, "%a") : NULL;
+    glong weekday_len;
+    gchar *short_weekday;
+
+    if (date)
+        g_date_time_unref (date);
+
+    if (!weekday)
     {
-        gchar *pointer = g_utf8_offset_to_pointer (buf, 2);
-        *pointer = '\0';
+        buf[0] = '\0';
+        return;
     }
+
+    weekday_len = MIN (2, g_utf8_strlen (weekday, -1));
+    short_weekday = g_utf8_substring (weekday, 0, weekday_len);
+    g_strlcpy (buf, short_weekday, buf_len);
+    g_free (short_weekday);
+    g_free (weekday);
 }
 
 static void
@@ -1154,7 +1166,7 @@ gnc_dense_cal_draw_to_buffer (GncDenseCal *dcal)
             {
                 int day_label_width;
                 gint label_x_offset, label_y_offset;
-                gint day_label_str_len = 4;
+                gint day_label_str_len = 9;
                 gchar day_label_str[day_label_str_len + 1];
                 day_label (day_label_str, day_label_str_len, (j + dcal->day_of_week_start) % 7);
                 pango_layout_set_text (layout, day_label_str, -1);
