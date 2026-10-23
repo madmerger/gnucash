@@ -96,6 +96,39 @@ rectify_environment_charset(const char* envvar)
   //Otherwise do nothing
 }
 
+static gchar *
+get_msvcrt_locale_name (LCID lcid)
+{
+    WCHAR language[128];
+    WCHAR country[128];
+    WCHAR codepage[16];
+
+    if (!GetLocaleInfoW (lcid, LOCALE_SENGLANGUAGE, language,
+                         G_N_ELEMENTS (language)) ||
+        !GetLocaleInfoW (lcid, LOCALE_SENGCOUNTRY, country,
+                         G_N_ELEMENTS (country)) ||
+        !GetLocaleInfoW (lcid, LOCALE_IDEFAULTANSICODEPAGE, codepage,
+                         G_N_ELEMENTS (codepage)))
+        return NULL;
+
+    gchar *language_utf8 = g_utf16_to_utf8 ((gunichar2 *)language, -1, NULL, NULL, NULL);
+    gchar *country_utf8 = g_utf16_to_utf8 ((gunichar2 *)country, -1, NULL, NULL, NULL);
+    gchar *codepage_utf8 = g_utf16_to_utf8 ((gunichar2 *)codepage, -1, NULL, NULL, NULL);
+    if (!language_utf8 || !country_utf8 || !codepage_utf8)
+    {
+        g_free (language_utf8);
+        g_free (country_utf8);
+        g_free (codepage_utf8);
+        return NULL;
+    }
+
+    gchar *locale = g_strdup_printf ("%s_%s.%s", language_utf8, country_utf8, codepage_utf8);
+    g_free (language_utf8);
+    g_free (country_utf8);
+    g_free (codepage_utf8);
+    return locale;
+}
+
 /* If one of the Unix locale variables LC_ALL, LC_MESSAGES, or LANG is
  * set in the environment check to see if it's a valid locale and if
  * it is set both the Windows and POSIX locales to that. If not
@@ -122,30 +155,50 @@ set_platform_locale(void)
       ((locale = getenv ("LC_MESSAGES")) != NULL && locale[0] != '\0') ||
       ((locale = getenv ("LANG")) != NULL && locale[0] != '\0'))
     {
-        gunichar2* wlocale = NULL;
-        int len = 0;
-        len = strchr(locale, '.') - locale;
-        locale[2] = '-';
-        wlocale = g_utf8_to_utf16 (locale, len, NULL, NULL, NULL);
-        if (IsValidLocaleName(wlocale))
+        if (strlen (locale) >= 5 && locale[2] == '_')
         {
-            LCID lcid = LocaleNameToLCID(wlocale, LOCALE_ALLOW_NEUTRAL_NAMES);
-            SetThreadLocale(lcid);
+            const char *dot = strchr(locale, '.');
+            int len = dot ? dot - locale : -1;
+            locale[2] = '-';
+            gunichar2 *wlocale = g_utf8_to_utf16 (locale, len, NULL, NULL, NULL);
+            if (wlocale && IsValidLocaleName (wlocale))
+            {
+                LCID lcid = LocaleNameToLCID (wlocale, LOCALE_ALLOW_NEUTRAL_NAMES);
+                SetThreadLocale (lcid);
+                locale[2] = '_';
+                if (!setlocale (LC_ALL, locale))
+                {
+                    gchar *crt_locale = get_msvcrt_locale_name (lcid);
+                    if (crt_locale)
+                        setlocale (LC_ALL, crt_locale);
+                    g_free (crt_locale);
+                }
+                g_free (wlocale);
+                return g_strdup (locale);
+            }
             locale[2] = '_';
-            setlocale (LC_ALL, locale);
-            g_free(wlocale);
-            return g_strdup (locale);
+            g_free (wlocale);
         }
-        g_free(locale);
-        g_free(wlocale);
     }
     if (GetUserDefaultLocaleName(lpLocaleName, LOCALE_NAME_MAX_LENGTH))
     {
-        locale = g_utf16_to_utf8((gunichar2*)lpLocaleName,
-                                 LOCALE_NAME_MAX_LENGTH,
-                                 NULL, NULL, NULL);
-        (locale)[2] = '_';
-        setlocale (LC_ALL, locale);
+        LCID lcid = LocaleNameToLCID (lpLocaleName, LOCALE_ALLOW_NEUTRAL_NAMES);
+        if (lcid)
+            SetThreadLocale (lcid);
+        locale = g_utf16_to_utf8 ((gunichar2 *)lpLocaleName,
+                                  -1, NULL, NULL, NULL);
+        if (!locale)
+            return g_strdup ("C");
+        if (strlen (locale) >= 5)
+            locale[2] = '_';
+        if (!setlocale (LC_ALL, locale))
+        {
+            LCID lcid = LocaleNameToLCID (lpLocaleName, LOCALE_ALLOW_NEUTRAL_NAMES);
+            gchar *crt_locale = get_msvcrt_locale_name (lcid);
+            if (crt_locale)
+                setlocale (LC_ALL, crt_locale);
+            g_free (crt_locale);
+        }
         return locale;
     }
     return g_strdup("C");

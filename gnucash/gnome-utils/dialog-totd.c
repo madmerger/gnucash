@@ -278,6 +278,7 @@ show_handler (const char *class_name, gint component_id,
 
     gtk_window_set_transient_for (GTK_WINDOW (totd_dialog->dialog),
                                   gnc_ui_get_main_window (NULL));
+    gtk_window_present (GTK_WINDOW (totd_dialog->dialog));
     LEAVE(" ");
     return(TRUE);
 }
@@ -368,6 +369,7 @@ gnc_totd_dialog (GtkWindow *parent, gboolean startup)
 
     gnc_restore_window_size(GNC_PREFS_GROUP, GTK_WINDOW(totd_dialog->dialog), parent);
     gtk_widget_show(GTK_WIDGET (totd_dialog->dialog));
+    gtk_window_present (GTK_WINDOW (totd_dialog->dialog));
 
     gnc_register_gui_component(DIALOG_TOTD_CM_CLASS,
                                NULL, close_handler, totd_dialog);
