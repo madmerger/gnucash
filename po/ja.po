@@ -31285,3 +31285,56 @@ msgstr "(税金関連の子勘定科目: %d)"
 #: libgnucash/tax/us/txf.scm:122
 msgid "No help available."
 msgstr "ヘルプが利用できません。"
+
+#: doc/tip_of_the_day.list.c:7
+msgid ""
+"Mailing lists are the preferred form of communication in the GnuCash "
+"community. For announcements of new releases, user groups etc. see the table "
+"at https://wiki.gnucash.org/wiki/Mailing_Lists."
+msgstr ""
+"GnuCash コミュニティでは、メーリングリストでの連絡が推奨されています。新しい"
+"リリースのお知らせやユーザーグループなどについては、https://wiki.gnucash.org/"
+"wiki/Mailing_Lists の表をご覧ください。"
+
+#: doc/tip_of_the_day.list.c:96
+msgid ""
+"You can pack multiple reports into a single window, providing all the "
+"financial information you want at a glance. To do so, use the "
+"\"Multicolumn\"->\"Custom Multicolumn Report\" report."
+msgstr ""
+"複数の帳票を一つのウィンドウ内にまとめ、一覧したい財務情報をすべて表示できま"
+"す。それには「複数列」→「カスタム複数列帳票」帳票を使います。"
+
+#: gnucash/gnome/dialog-sx-editor.c:892
+msgid ""
+"The Scheduled Transaction Editor cannot automatically balance all of the "
+"transactions in this Scheduled Transaction.\n"
+"Should it still be entered?"
+msgstr ""
+"予定取引エディターは、この予定取引に含まれるすべての取引の貸借を自動で一致さ"
+"せることができません。\n"
+"それでも入力しますか?"
+
+#: gnucash/gnome/gnc-plugin-page-invoice.cpp:208
+msgid "_Reset Default Layout for Customer Business items"
+msgstr "得意先向け事業項目の既定レイアウトをリセット(_R)"
+
+#: gnucash/report/reports/standard/category-barchart.scm:513
+msgid "Negative amounts detected"
+msgstr "負の金額が見つかりました"
+
+#: gnucash/report/reports/standard/category-barchart.scm:514
+msgid ""
+"Charting ratios cannot occur on accounts with negative balances. Please "
+"deselect the accounts with negative balances."
+msgstr ""
+"残高が負の勘定科目では比率のグラフを作成できません。残高が負の勘定科目の選択"
+"を解除してください。"
+
+#: gnucash/report/reports/standard/new-aging.scm:43
+msgid "Show all owners including inactive"
+msgstr "非アクティブを含むすべての取引先を表示する"
+
+#: gnucash/report/reports/standard/new-aging.scm:111
+msgid "Show all vendors/customers including inactive ones"
+msgstr "非アクティブなものを含むすべての仕入先/得意先を表示します。"
