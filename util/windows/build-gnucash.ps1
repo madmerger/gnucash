@@ -34,6 +34,17 @@ $WebkitPackage = "$MingwPackagePrefix" + "webkitgtk3-$WebkitVersion-any.pkg.tar.
 $LibsoupPackage = "$MingwPackagePrefix" + "libsoup-2.74.3-4-any.pkg.tar.zst"
 $Utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 
+function Invoke-Pacman([string[]]$PacmanArguments) {
+    $savedErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & $Pacman @PacmanArguments 2>&1 | ForEach-Object { Write-Host $_ }
+        return $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $savedErrorActionPreference
+    }
+}
+
 if (-not (Test-Path $SetupScript)) {
     throw "The gnucash-on-windows setup script was not found at $SetupScript"
 }
@@ -300,15 +311,15 @@ $splitRuntimePackages = @($splitRuntimeComponents | ForEach-Object { "$MingwPack
 $installedPackages = & $Pacman -Qq
 $installedSplitRuntimePackages = @($splitRuntimePackages | Where-Object { $installedPackages -contains $_ })
 if ($installedSplitRuntimePackages.Count -gt 0) {
-    & $Pacman -Rdd --noconfirm $installedSplitRuntimePackages
-    if ($LASTEXITCODE -ne 0) {
-        throw "Removing the GCC 16 split runtime packages failed with exit code $LASTEXITCODE"
+    $pacmanExitCode = Invoke-Pacman (@("-Rdd", "--noconfirm") + $installedSplitRuntimePackages)
+    if ($pacmanExitCode -ne 0) {
+        throw "Removing the GCC 16 split runtime packages failed with exit code $pacmanExitCode"
     }
 }
 
-& $Pacman -U --noconfirm --needed $packageUrls.ToArray() 2>&1
-if ($LASTEXITCODE -ne 0) {
-    throw "Installing the archived MinGW toolchain failed with exit code $LASTEXITCODE"
+$pacmanExitCode = Invoke-Pacman (@("-U", "--noconfirm", "--needed") + $packageUrls.ToArray())
+if ($pacmanExitCode -ne 0) {
+    throw "Installing the archived MinGW toolchain failed with exit code $pacmanExitCode"
 }
 
 $webkitPath = Join-Path $DownloadDir $WebkitPackage
@@ -399,9 +410,9 @@ if (-not $IsX64) {
         -PinnedPackages $packagesToPin.ToArray()
     $archivePackagePaths = @($archiveClosure | ForEach-Object { $_.Path })
     if ($archivePackagePaths.Count -gt 0) {
-        & $Pacman -U --noconfirm --needed $archivePackagePaths 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            throw "Installing the archived i686 dependency closure failed with exit code $LASTEXITCODE"
+        $pacmanExitCode = Invoke-Pacman (@("-U", "--noconfirm", "--needed") + $archivePackagePaths)
+        if ($pacmanExitCode -ne 0) {
+            throw "Installing the archived i686 dependency closure failed with exit code $pacmanExitCode"
         }
     }
     foreach ($package in $archiveClosure) {
@@ -409,9 +420,9 @@ if (-not $IsX64) {
     }
 }
 
-& $Pacman -U --noconfirm --needed $libsoupPath $webkitPath 2>&1
-if ($LASTEXITCODE -ne 0) {
-    throw "Installing the archived libsoup and GnuCash WebKitGTK packages failed with exit code $LASTEXITCODE"
+$pacmanExitCode = Invoke-Pacman (@("-U", "--noconfirm", "--needed", $libsoupPath, $webkitPath))
+if ($pacmanExitCode -ne 0) {
+    throw "Installing the archived libsoup and GnuCash WebKitGTK packages failed with exit code $pacmanExitCode"
 }
 
 $ignoreLine = "IgnorePkg = " + (($packagesToPin | Sort-Object -Unique) -join " ")
