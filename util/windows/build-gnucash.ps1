@@ -274,6 +274,8 @@ os.environ['AR'] = os.path.join(_mingw_base, 'bin', 'ar')
 append_autogenargs('libdbi-drivers', '--without-mysql --without-pgsql')
 branches['gnucash-git'] = ('$repoUri', '$GnucashBranch')
 append_autogenargs('gnucash-git', '-DWITH_SQL=ON -DWITH_AQBANKING=OFF -DWITH_OFX=OFF -DWITH_PYTHON=OFF -DGNC_DEFAULT_LANG=ja_JP')
+_guile3_cflags = os.environ.get('CFLAGS', '')
+module_extra_env['guile3'] = {'CFLAGS': _guile3_cflags + ' -std=gnu11 -Wno-int-conversion -Wno-implicit-function-declaration -Wno-maybe-uninitialized'}
 # End GnuCash local source override
 "@
 [System.IO.File]::WriteAllText($jhbuildrc, $jhbuildConfig, $Utf8NoBom)
