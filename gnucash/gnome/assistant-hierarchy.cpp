@@ -1569,6 +1569,10 @@ gnc_create_hierarchy_assistant (gboolean use_defaults, GncHierarchyAssistantFini
      * example, if an empty account tree tab is opened, a session is created
      * which creates a new, but empty, book). */
     data->new_book = gnc_is_new_book();
+    /* The currency selector and default currency need the book's
+     * commodity table, so make sure a session exists. */
+    if (data->new_book)
+        gnc_get_current_book ();
 
     builder = gtk_builder_new();
     gnc_builder_add_from_file (builder, "assistant-hierarchy.glade", "hierarchy_assistant");
