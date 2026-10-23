@@ -55,6 +55,9 @@ if (-not (Test-Path $SetupScript)) {
 }
 
 if (-not (Test-Path $MsysRoot)) {
+    if ($VerifyOnly) {
+        throw "VerifyOnly requires an existing MSYS2 at $MsysRoot"
+    }
     if ($IsX64) {
         & $SetupScript -x86_64 -target_dir $TargetDir
     } else {
@@ -138,7 +141,9 @@ if ($IsX64) {
     }
 
 }
-[System.IO.File]::WriteAllText($moduleset, $modulesetText, $Utf8NoBom)
+if (-not $VerifyOnly) {
+    [System.IO.File]::WriteAllText($moduleset, $modulesetText, $Utf8NoBom)
+}
 
 $index = (Invoke-WebRequest -Uri $MsysArchiveBase -UseBasicParsing).Content
 $archives = foreach ($match in [regex]::Matches(
@@ -212,7 +217,7 @@ function Get-ArchivedPackagePath([object]$Package) {
     $savedErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
-        & $bash -lc "pacman-key --verify '$unixSignaturePath' '$unixPackagePath'" 2>&1 |
+        & $bash -lc 'pacman-key --verify "$1" "$2"' verify $unixSignaturePath $unixPackagePath 2>&1 |
             ForEach-Object { Write-Host $_ }
         $signatureExitCode = $LASTEXITCODE
     } finally {
@@ -310,11 +315,8 @@ function Resolve-ArchivedPackageClosure(
         }
 
         if ($PinnedPackages -contains $name) {
-            $unsatisfied = & $Pacman -T $dependency 2>$null
-            if ($LASTEXITCODE -eq 0 -and -not $unsatisfied) {
-                continue
-            }
-            throw "Archived dependency $dependency conflicts with a pinned package"
+            # The pinned archive is installed in the same pacman -U transaction, and pacman rejects any version conflict there.
+            continue
         }
 
         $archive = Get-NewestArchivedPackage $name
@@ -634,8 +636,8 @@ if ($DependenciesOnly) {
         "googletest"
     )
 }
-$buildCommand = "cd '$targetUnixPath' && jhbuild -f src/gnucash-on-windows.git/jhbuildrc --no-interact --exit-on-error build --skip=aqbanking,libofx " + ($buildTargets -join " ")
-& $bash -lc $buildCommand
+$buildCommand = 'cd "$1" && jhbuild -f src/gnucash-on-windows.git/jhbuildrc --no-interact --exit-on-error build --skip=aqbanking,libofx ' + ($buildTargets -join " ")
+& $bash -lc $buildCommand verify $targetUnixPath
 if ($LASTEXITCODE -ne 0) {
     throw "jhbuild failed with exit code $LASTEXITCODE"
 }
