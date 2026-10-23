@@ -15332,7 +15332,7 @@ msgstr "仕訳行が 2 つを超える取引での移動操作"
 
 #: gnucash/gtkbuilder/dialog-preferences.glade:2703
 msgid "Do _nothing"
-msgstr "_何もしない"
+msgstr "何もしない(_N)"
 
 #: gnucash/gtkbuilder/dialog-preferences.glade:2709
 msgid "Do nothing."
@@ -15340,7 +15340,7 @@ msgstr "何もしない。"
 
 #: gnucash/gtkbuilder/dialog-preferences.glade:2722
 msgid "Go to the first split with the _largest value"
-msgstr "金額が_最大の最初の仕訳行に移動する"
+msgstr "金額が最大の最初の仕訳行に移動する(_L)"
 
 #: gnucash/gtkbuilder/dialog-preferences.glade:2728
 msgid ""
@@ -17935,7 +17935,7 @@ msgstr "(自動記入)"
 
 #: gnucash/import-export/aqb/dialog-ab.glade:1219
 msgid "Payment _Purpose (only for recipient)"
-msgstr "支払の_目的（受取人のみ）"
+msgstr "支払の目的（受取人のみ）(_P)"
 
 #: gnucash/import-export/aqb/dialog-ab.glade:1235
 msgid "Payment Purpose continued"
@@ -29734,7 +29734,7 @@ msgstr "帳票をエクスポート(_R)"
 
 #: gnucash/ui/gnc-plugin-page-sx-list.ui:37
 msgid "_Save layout as default"
-msgstr "レイアウトを既定として_保存"
+msgstr "レイアウトを既定として保存(_S)"
 
 #: gnucash/ui/gnc-plugin-page-sx-list.ui:39
 msgid "Save current layout as default"
@@ -29764,7 +29764,7 @@ msgstr "選択した予定取引を実行します。入力予定の取引がな
 
 #: gnucash/ui/gnc-plugin-page-sx-list.ui:214
 msgid "_Run"
-msgstr "_実行"
+msgstr "実行(_R)"
 
 #: gnucash/ui/gnc-plugin-qif-import.ui:6
 msgid "Import _QIF…"
