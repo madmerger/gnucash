@@ -148,10 +148,11 @@ gnc_default_invoice_report_combo (const char* guid_scm_function)
     GSList *invoice_list = NULL;
     SCM template_menu_name = scm_c_eval_string ("gnc:report-template-menu-name/report-guid");
     SCM get_rpt_guids = scm_c_eval_string (guid_scm_function);
+    SCM is_custom = scm_c_eval_string ("gnc:report-template-is-custom/template-guid?");
     SCM reportlist;
     SCM rpt_guids;
 
-    if (!scm_is_procedure (get_rpt_guids))
+    if (!scm_is_procedure (get_rpt_guids) || !scm_is_procedure (is_custom))
         return NULL;
 
     reportlist = scm_call_0 (get_rpt_guids);
@@ -169,8 +170,13 @@ gnc_default_invoice_report_combo (const char* guid_scm_function)
             ReportListEntry *rle = g_new0 (ReportListEntry, 1);
 
             rle->report_guid = guid_str;
-            rle->report_name = g_strdup (_(name));
-            g_free (name);
+            if (scm_is_true (scm_call_1 (is_custom, SCM_CAR (rpt_guids))))
+                rle->report_name = name;
+            else
+            {
+                rle->report_name = g_strdup (_(name));
+                g_free (name);
+            }
 
             invoice_list = g_slist_append (invoice_list, rle);
 
