@@ -157,4 +157,10 @@ set_platform_ctype_to_acp (void)
     // The C locale is always aligned with ACP. Use _wsetlocale because
     // libintl's setlocale replacement refuses "C" when the ACP is UTF-8.
     _wsetlocale (LC_CTYPE, L"C");
+    if (g_utf8_collate ("\xe5\x86\x86", "\xe5\x86\x86") != 0)
+    {
+        // A multibyte LC_COLLATE that doesn't match the UTF-8 ACP makes
+        // strcoll fail, breaking g_utf8_collate.
+        _wsetlocale (LC_COLLATE, L"C");
+    }
 }

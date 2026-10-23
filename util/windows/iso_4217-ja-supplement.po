@@ -1,0 +1,251 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: GnuCash ISO-4217 Japanese supplement\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: GnuCash Windows build kit\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "Andorran Franc"
+msgstr "アンドラ・フラン"
+
+msgid "Andorran Peseta"
+msgstr "アンドラ・ペセタ"
+
+msgid "Netherlands Antillian Guilder"
+msgstr "オランダ領アンティル・ギルダー"
+
+msgid "Angola New Kwanza"
+msgstr "アンゴラ・新クワンザ"
+
+msgid "Angola Kwanza Reajustado"
+msgstr "アンゴラ・再調整クワンザ"
+
+msgid "Argentine Austral"
+msgstr "アルゼンチン・アウストラル"
+
+msgid "Austrian Schilling"
+msgstr "オーストリア・シリング"
+
+msgid "Aruban Guilder"
+msgstr "アルバ・ギルダー"
+
+msgid "Azerbaijanian Manat"
+msgstr "アゼルバイジャン・マナト"
+
+msgid "Bosnia and Herzegovina Dinar"
+msgstr "ボスニア・ヘルツェゴビナ・ディナール"
+
+msgid "Convertible Marks"
+msgstr "兌換マルク"
+
+msgid "Belgian Franc"
+msgstr "ベルギー・フラン"
+
+msgid "Bulgarian Lev A/99"
+msgstr "ブルガリア・レフ A/99"
+
+msgid "Bulgarian Lev"
+msgstr "ブルガリア・レフ"
+
+msgid "Mvdol"
+msgstr "ボリビア・インデックス単位"
+
+msgid "Brazilian Cruzeiro"
+msgstr "ブラジル・クルゼイロ"
+
+msgid "Brazilian Cruzeiro Real"
+msgstr "ブラジル・クルゼイロ・レアル"
+
+msgid "Belarussian Rouble"
+msgstr "ベラルーシ・ルーブル"
+
+msgid "Belarussian Ruble"
+msgstr "ベラルーシ・ルーブル"
+
+msgid "Franc Congolais"
+msgstr "コンゴ・フラン"
+
+msgid "WIR Euro"
+msgstr "WIRユーロ"
+
+msgid "WIR Franc"
+msgstr "WIRフラン"
+
+msgid "Unidades de fomento"
+msgstr "インフレ連動単位"
+
+msgid "Unidad de Valor Real"
+msgstr "実質価値単位"
+
+msgid "Cuban Convertible Peso"
+msgstr "キューバ兌換ペソ"
+
+msgid "Cape Verde Escudo"
+msgstr "カーボベルデ・エスクード"
+
+msgid "Cyprus Pound"
+msgstr "キプロス・ポンド"
+
+msgid "Deutsche Mark"
+msgstr "ドイツ・マルク"
+
+msgid "Ecuador Sucre"
+msgstr "エクアドル・スクレ"
+
+msgid "Kroon"
+msgstr "クルーン"
+
+msgid "Spanish Peseta"
+msgstr "スペイン・ペセタ"
+
+msgid "Finnish Markka"
+msgstr "フィンランド・マルッカ"
+
+msgid "French Franc"
+msgstr "フランス・フラン"
+
+msgid "Cedi"
+msgstr "セディ"
+
+msgid "Guinea Franc"
+msgstr "ギニア・フラン"
+
+msgid "Greek Drachma"
+msgstr "ギリシャ・ドラクマ"
+
+msgid "Guinea-Bissau Peso"
+msgstr "ギニアビサウ・ペソ"
+
+msgid "Croatian Kuna"
+msgstr "クロアチア・クーナ"
+
+msgid "Irish Pound"
+msgstr "アイルランド・ポンド"
+
+msgid "Italian Lira"
+msgstr "イタリア・リラ"
+
+msgid "Comoro Franc"
+msgstr "コモロ・フラン"
+
+msgid "Kip"
+msgstr "キープ"
+
+msgid "Lithuanian Litas"
+msgstr "リトアニア・リタス"
+
+msgid "Luxembourg Franc"
+msgstr "ルクセンブルク・フラン"
+
+msgid "Latvian Lats"
+msgstr "ラトビア・ラッツ"
+
+msgid "Malagasy Franc"
+msgstr "マダガスカル・フラン"
+
+msgid "Mali Franc"
+msgstr "マリ・フラン"
+
+msgid "Maltese Lira"
+msgstr "マルタ・リラ"
+
+msgid "Kwacha"
+msgstr "クワチャ"
+
+msgid "Mexican Unidad de Inversion (UDI)"
+msgstr "メキシコ投資単位（UDI）"
+
+msgid "Metical"
+msgstr "メティカル"
+
+msgid "Nicaraguan Cordoba"
+msgstr "ニカラグア・コルドバ"
+
+msgid "Netherlands Guilder"
+msgstr "オランダ・ギルダー"
+
+msgid "Nuevo Sol"
+msgstr "ヌエボ・ソル"
+
+msgid "Portuguese Escudo"
+msgstr "ポルトガル・エスクード"
+
+msgid "Romanian Old Leu"
+msgstr "旧ルーマニア・レウ"
+
+msgid "New Leu"
+msgstr "新レウ"
+
+msgid "Russian Rouble"
+msgstr "ロシア・ルーブル"
+
+msgid "Sudanese Dinar"
+msgstr "スーダン・ディナール"
+
+msgid "Slovenian Tolar"
+msgstr "スロベニア・トラール"
+
+msgid "Slovak Koruna"
+msgstr "スロバキア・コルナ"
+
+msgid "Suriname Guilder"
+msgstr "スリナム・ギルダー"
+
+msgid "Tajik Rouble"
+msgstr "タジキスタン・ルーブル"
+
+msgid "Manat"
+msgstr "マナト"
+
+msgid "Pa'anga"
+msgstr "パアンガ"
+
+msgid "US Dollar (Next day)"
+msgstr "米ドル（翌日）"
+
+msgid "US Dollar (Same day)"
+msgstr "米ドル（同日）"
+
+msgid "Uruguay Peso en Unidades Indexadas"
+msgstr "指数連動単位建てウルグアイ・ペソ"
+
+msgid "Venezuela Bolívar"
+msgstr "ベネズエラ・ボリバル"
+
+msgid "Bolivar Fuerte"
+msgstr "ベネズエラ・ボリバル・フエルテ"
+
+msgid "Bolivar Soberano"
+msgstr "ベネズエラ・ボリバル・ソベラノ"
+
+msgid "Yugoslavian Dinar"
+msgstr "ユーゴスラビア・ディナール"
+
+msgid "Kwacha (old)"
+msgstr "旧クワチャ"
+
+msgid "Zimbabwe Dollar"
+msgstr "ジンバブエ・ドル"
+
+msgid "SDR"
+msgstr "特別引出権"
+
+msgid "Gold-Franc"
+msgstr "金フラン"
+
+msgid "UIC-Franc"
+msgstr "UICフラン"
+
+msgid "Code for testing purposes"
+msgstr "テスト用コード"
+
+msgid "No currency"
+msgstr "通貨なし"
+
+msgid "Sistema Unitario de Compensación Regional"
+msgstr "地域統一補償システム"

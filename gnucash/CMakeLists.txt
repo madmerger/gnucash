@@ -205,6 +205,11 @@ set(BUILD_ENV_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/envir
 file(WRITE ${ENV_FILE_OUT} "${ENV_STRINGS_CONF}")
 file(WRITE ${BUILD_ENV_FILE_OUT} "${ENV_STRINGS_CONF}")
 
+if (NOT GNC_DEFAULT_LANG STREQUAL "")
+  file(APPEND ${ENV_FILE_OUT} "LANG=${GNC_DEFAULT_LANG}\nLANGUAGE={LANG}\n")
+  file(APPEND ${BUILD_ENV_FILE_OUT} "LANG=${GNC_DEFAULT_LANG}\nLANGUAGE={LANG}\n")
+endif ()
+
 set(XDG_TEXT "
 # GnuCash was not installed in the default location.
 # XDG_DATA_DIRS will be set so that our documentation

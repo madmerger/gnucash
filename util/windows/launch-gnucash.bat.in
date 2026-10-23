@@ -1,0 +1,6 @@
+@echo off
+set "GNC_HOME=@GNC_HOME@"
+set "MSYS2_MINGW=@MSYS2_MINGW@"
+set "PATH=%GNC_HOME%\bin;%MSYS2_MINGW%\bin;%PATH%"
+set "XDG_DATA_DIRS=%GNC_HOME%\share;%MSYS2_MINGW%\share;%XDG_DATA_DIRS%"
+"%GNC_HOME%\bin\gnucash.exe" %*

@@ -74,6 +74,13 @@ option (LEAKS "Report leaks for tests in a non-Apple Asan build." OFF)
 option (ODR "Report One Definition Rule violations in tests in a non-Apple Asan build." OFF)
 # ############################################################
 
+if (WIN32)
+  set (GNC_DEFAULT_LANG_DEFAULT "ja_JP.UTF-8")
+else ()
+  set (GNC_DEFAULT_LANG_DEFAULT "")
+endif ()
+set (GNC_DEFAULT_LANG "${GNC_DEFAULT_LANG_DEFAULT}" CACHE STRING "Default GnuCash user interface language")
+
 # These are also settable from the command line in a similar way.
 
 # Use gsettings-desktop-schemas for a better integration with GNOME
