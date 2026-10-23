@@ -541,6 +541,7 @@ append_autogenargs('gnucash-git', '-DWITH_SQL=ON -DWITH_AQBANKING=OFF -DWITH_OFX
 [System.IO.File]::WriteAllText($jhbuildrc, $jhbuildConfig, $Utf8NoBom)
 
 $env:TARGET = "gnucash-stable"
+$env:MSYSTEM = $MingwDir.ToUpper()
 $buildTargets = @("gnucash-git")
 if ($DependenciesOnly) {
     $buildTargets = @(
